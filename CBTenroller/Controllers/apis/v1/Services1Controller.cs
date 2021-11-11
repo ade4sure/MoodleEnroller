@@ -77,7 +77,7 @@ namespace CBTenroller.Controllers.apis.v1
                 return NotFound();
             }
 
-            2020var Dto = new HallLoginDto()
+            var Dto = new HallLoginDto()
             {
                 Name = hall.Name,
                 FIR = hall.FIR

@@ -5,7 +5,7 @@ namespace CBTenroller.Dto
     public class GetStudentDto
     {
         [Required]
-        public int MatNo { get; set; }
+        public string MatNo { get; set; }
         [Required]
         public string CourseCode { get; set; }
         [Required]       

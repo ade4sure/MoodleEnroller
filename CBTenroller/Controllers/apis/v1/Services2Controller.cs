@@ -73,7 +73,9 @@ namespace CBTenroller.Controllers.apis.v1
 
             if (Chall.EnforceBatch == true)
             {
-                if (Chall.StartNumber >= (short)model.MatNo && (int)model.MatNo <= Chall.LastNumber)
+                var matno = int.Parse(model.MatNo);
+
+                if (Chall.StartNumber >= matno && matno <= Chall.LastNumber)
                 {
                     //Proceed to load student
                 }
@@ -85,13 +87,30 @@ namespace CBTenroller.Controllers.apis.v1
 
             //load student
             var student = await _context.Students
-                                                .Where(w => w.UserNumber == model.MatNo.ToString())
+                                                .Where(w => w.UserNumber == model.MatNo)
                                                 .AsNoTracking()
                                                 .FirstOrDefaultAsync();
 
             if (student == null)
             {
-                return Ok(new StudentDto() { Name = "Not Found", ImageURL = "/images/Avatar.png" });
+
+                var finger = await _context.Fingers
+                                        .Where(w => w.UserId == model.MatNo.ToString())
+                                        .AsNoTracking()
+                                        .FirstOrDefaultAsync();
+
+                if (finger ==null)
+                {
+                    return Ok(new StudentDto() { Name = "Not Found", ImageURL = "/images/Avatar.png" });
+                }
+
+                student = new Student()
+                {
+                    UserNumber = finger.UserId,
+                    FIR = finger.FIR, 
+                    FullName = "LAUTECH Student"                    
+                };
+
             }
 
             var Dto = new StudentDto()
@@ -101,6 +120,7 @@ namespace CBTenroller.Controllers.apis.v1
                 FIR = student.FIR,
                 ImageURL = student.ImageURL
             };
+
             return Ok(Dto);
 
 
