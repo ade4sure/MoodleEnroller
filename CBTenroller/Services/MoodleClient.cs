@@ -1,4 +1,6 @@
-﻿using CBTenroller.Models;
+﻿using CBTenroller.Data;
+using CBTenroller.Models;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using System;
@@ -16,17 +18,22 @@ namespace CBTenroller.Services
         Task<bool> UpdateUserPassword(int studId, string paswd);
         Task<int> CreateUser(MoodleUser user);
         Task<bool> EnrollUser(int studId, int moodleCourseId);
+        Task<int> DeleteAttempt(int quizID, int studId);
 
     }
     public class MoodleClient : IMoodleClient
     {
-        public MoodleClient(IHttpClientFactory factory, IConfiguration configuration)
+        private readonly MoodleDbContext _moodleContext;
+
+        public MoodleClient(IHttpClientFactory factory, IConfiguration configuration, MoodleDbContext moodleContext)
         {
             _Client = factory.CreateClient("MoodleClient");
 
             _Configuration = configuration;
-
+            
             requestURL = _Configuration["Moodle:requestURL"];
+
+            _moodleContext = moodleContext;
         }
 
         public HttpClient _Client { get; }
@@ -69,6 +76,31 @@ namespace CBTenroller.Services
 
             return 0;
 
+        }
+
+        public async Task<int> DeleteAttempt(int quizID, int studId)
+        {
+            //send sql query to delete the attempt
+            int noOfRowDeleted = 0;
+
+            //var rec_s = await _moodleContext.Quiz_Attempts
+            //                                              .Where(w => w.userid == studId && w.quiz == quizID)
+            //                                              .FirstOrDefaultAsync(); 
+
+           // var sql = "SELECT id, attempt FROM mdl_quiz_attempts WHERE userid = " + studId + " AND quiz = " + quizID;
+            var sql = "DELETE FROM mdl_quiz_attempts WHERE userid = " + studId + " AND quiz = " + quizID;
+            //var rec_s = await _moodleContext.Quiz_Attempts.FromSqlRaw(sql)         
+            //                                               //.Select(s=>s.id)
+            //                                              .FirstOrDefaultAsync();
+
+            var rec_s =  _moodleContext.Database.ExecuteSqlRaw(sql);     
+                                                          
+             
+
+            //noOfRowDeleted = await _moodleContext.SaveChangesAsync();
+
+
+            return rec_s;
         }
 
         public async Task<bool> EnrollUser(int studId, int moodleCourseId)

@@ -21,6 +21,7 @@ namespace CBTenroller.Data
         public DbSet<CourseHall> CourseHalls { get; set; }
         public DbSet<CourseEnrollment> CourseEnrollments { get; set; }
         public DbSet<Fingers> Fingers { get; set; }
+        public DbSet<Payment> Payments { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

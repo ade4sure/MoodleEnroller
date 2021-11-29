@@ -38,6 +38,9 @@ namespace CBTenroller
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseMySql(conStr, ServerVersion.AutoDetect(conStr)));
 
+            services.AddDbContext<MoodleDbContext>(options =>
+              options.UseMySql(conStrMod, ServerVersion.AutoDetect(conStrMod)), ServiceLifetime.Singleton);
+
 
             services.AddHttpClient("MoodleClient", client =>
             {

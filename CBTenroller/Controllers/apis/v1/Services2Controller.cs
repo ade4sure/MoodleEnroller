@@ -9,8 +9,9 @@ using CBTenroller.Data;
 using CBTenroller.Models;
 using CBTenroller.Dto;
 using CBTenroller.Services;
+using Microsoft.Extensions.Configuration;
 
-namespace CBTenroller.Controllers.apis.v1
+namespace CBTenroller.Controllers.apis.v2
 {
     [Route("api/v2/services")]
     [ApiController]
@@ -19,11 +20,13 @@ namespace CBTenroller.Controllers.apis.v1
     {
         private readonly ApplicationDbContext _context;
         private readonly IMoodleClient _moodle;
+        private readonly IConfiguration _configuration;
 
-        public Services2Controller(ApplicationDbContext context, IMoodleClient moodle)
+        public Services2Controller(ApplicationDbContext context, IMoodleClient moodle, IConfiguration configuration)
         {
             _context = context;
             _moodle = moodle;
+            _configuration = configuration;
         }
                
 
@@ -33,6 +36,37 @@ namespace CBTenroller.Controllers.apis.v1
         {
             //get client IP and use that to validate the hall
             var ClientIPAddr = HttpContext.Connection.RemoteIpAddress?.ToString();
+
+
+            //Checking Payment
+            var Conf_Semester = int.Parse(_configuration["LAUTECH:PaymentSemester"]);
+            var Conf_Session = _configuration["LAUTECH:PaymentSession"];
+
+            var pay = await _context.Payments
+                                            .Where(w => w.Matric == model.MatNo && w.Session == Conf_Session)
+                                            .AsNoTracking()
+                                            .ToListAsync();
+
+            if (pay== null )
+            {
+                return Ok(new StudentDto() { Name = "No Payment !!!", ImageURL = "/images/eNaira.jpg" });
+            }           
+
+            var PartPays = pay.Where(w => w.Payment_Type == "PART").ToList();
+            var FullPays = pay.Where(w => w.Payment_Type == "FULL").ToList();
+
+
+
+
+            if (FullPays.Count() == 0 && PartPays.Count() < Conf_Semester) //Satisfies PartPay
+            {
+                return Ok(new StudentDto() { Name = "Incomplete Payment !!!", ImageURL = "/images/eNaira.jpg" });
+            }
+            else if (FullPays.Count() < 1 && PartPays.Count() < Conf_Semester) //Satisfies FullPay
+            {
+                return Ok(new StudentDto() { Name = "Incomplete Payment !!!", ImageURL = "/images/eNaira.jpg" });
+            }
+
 
             var hall = await _context.Halls
                                         .Where(w => w.Name == model.hall)
@@ -281,6 +315,30 @@ namespace CBTenroller.Controllers.apis.v1
                                     .Select(s => s.Course);
 
             return Ok(courses);
+        }
+
+        [HttpPost()]
+        [Route("deleteAttempt/")]
+        [Consumes("application/json")]
+        public async Task<ActionResult<EnrollDto>> DeleteQuizAttempt([FromQuery] int quiz, string matNo)
+        {
+
+            var deleted = await DeleteAttempt(quiz, matNo);
+            
+            return Ok(deleted + "- Deleted");
+
+        }
+
+        private async Task<int> DeleteAttempt(int quizID, string userNumber)
+        {
+            var userId = await _moodle.FindUserId(userNumber);
+
+            if (userId > 0) //user found
+            {  
+               return  await _moodle.DeleteAttempt(quizID, userId);                
+            }
+
+            return 0;
         }
     }
 }
